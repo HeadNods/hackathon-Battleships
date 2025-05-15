@@ -7,17 +7,18 @@ namespace BattleshipGame
         private static readonly SoundPlayer? hitSound;
         private static readonly SoundPlayer? missSound;
         private static readonly SoundPlayer? sinkSound;
-        private static readonly SoundPlayer? victorySound;
-
-        static SoundManager()
+        private static readonly SoundPlayer? victorySound;        static SoundManager()
         {
             try
             {
+                string systemRoot = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+                string mediaPath = Path.Combine(systemRoot, "Media");
+
                 // Using Windows system sounds as they're readily available
-                hitSound = new SoundPlayer(@"%SystemRoot%\Media\Windows Notify.wav");
-                missSound = new SoundPlayer(@"%SystemRoot%\Media\Windows Navigation Start.wav");
-                sinkSound = new SoundPlayer(@"%SystemRoot%\Media\Windows Exclamation.wav");
-                victorySound = new SoundPlayer(@"%SystemRoot%\Media\tada.wav");
+                hitSound = new SoundPlayer(Path.Combine(mediaPath, "Windows Notify.wav"));
+                missSound = new SoundPlayer(Path.Combine(mediaPath, "Windows Navigation Start.wav"));
+                sinkSound = new SoundPlayer(Path.Combine(mediaPath, "Windows Exclamation.wav"));
+                victorySound = new SoundPlayer(Path.Combine(mediaPath, "tada.wav"));
 
                 // Pre-load sounds
                 hitSound.LoadAsync();
@@ -29,26 +30,52 @@ namespace BattleshipGame
             {
                 // Fail silently if sounds can't be loaded
             }
-        }
-
-        public static void PlayHit()
+        }        public static void PlayHit()
         {
-            hitSound?.Play();
+            try
+            {
+                hitSound?.Play();
+            }
+            catch (System.IO.FileNotFoundException)
+            {
+                // Silently fail if sound file is not found
+            }
         }
 
         public static void PlayMiss()
         {
-            missSound?.Play();
+            try
+            {
+                missSound?.Play();
+            }
+            catch (System.IO.FileNotFoundException)
+            {
+                // Silently fail if sound file is not found
+            }
         }
 
         public static void PlaySink()
         {
-            sinkSound?.Play();
+            try
+            {
+                sinkSound?.Play();
+            }
+            catch (System.IO.FileNotFoundException)
+            {
+                // Silently fail if sound file is not found
+            }
         }
 
         public static void PlayVictory()
         {
-            victorySound?.Play();
+            try
+            {
+                victorySound?.Play();
+            }
+            catch (System.IO.FileNotFoundException)
+            {
+                // Silently fail if sound file is not found
+            }
         }
     }
 }

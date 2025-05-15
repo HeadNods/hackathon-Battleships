@@ -343,10 +343,8 @@ namespace BattleshipGame
                 setupForm.ShowDialog();
                 this.Close();
             }
-        }
-
-        // Add a sound feedback method
-        private void ProvideFeedback(bool isHit)
+        }        // Add a sound feedback method
+        private async void ProvideFeedback(bool isHit)
         {
             if (isHit)
             {
@@ -359,14 +357,19 @@ namespace BattleshipGame
                 SoundManager.PlayMiss();
             }
 
-            // Reset background color after a short delay
-            Task.Delay(100).ContinueWith(_ =>
+            try
             {
-                if (this.IsHandleCreated)
+                // Reset background color after a short delay
+                await Task.Delay(100);
+                if (!IsDisposed && IsHandleCreated)
                 {
-                    this.Invoke(() => this.BackColor = SystemColors.Control);
+                    this.BackColor = SystemColors.Control;
                 }
-            });
+            }
+            catch (ObjectDisposedException)
+            {
+                // Form was closed, ignore
+            }
         }
 
         private void UpdateStatusPanel()

@@ -16,6 +16,11 @@ A modern Windows Forms implementation of the classic Battleship board game where
 - Windows operating system
 - .NET 9.0 or later
 - Visual Studio 2022 or later (for development)
+- Windows system sounds (for audio feedback)
+  - Windows Notify.wav
+  - Windows Navigation Start.wav
+  - Windows Exclamation.wav
+  - tada.wav
 
 ## Getting Started
 
