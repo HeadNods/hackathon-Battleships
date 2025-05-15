@@ -2,3 +2,4 @@ BattleshipGame/bin
 BattleshipGame/obj
 copilot-instructions.md
 .vscode
+BattleshipGame/*.bak

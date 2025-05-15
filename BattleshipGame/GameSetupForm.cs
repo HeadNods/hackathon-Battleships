@@ -48,9 +48,7 @@ namespace BattleshipGame
                 Location = new Point(GRID_OFFSET + (GRID_SIZE * CELL_SIZE) + 50, GRID_OFFSET + 250)
             };
             rotateButton.Click += (s, e) => RotateSelectedShip();
-            this.Controls.Add(rotateButton);
-
-            // Add instructions label
+            this.Controls.Add(rotateButton);            // Add instructions label
             Label instructionsLabel = new Label
             {
                 Text = "Instructions:\n1. Select a ship from the right\n2. Press 'R' to rotate\n3. Click on the grid to place\nPress ESC to deselect",
@@ -59,6 +57,16 @@ namespace BattleshipGame
                 Font = new Font("Arial", 10)
             };
             this.Controls.Add(instructionsLabel);
+
+            // Add reset button
+            Button resetButton = new Button
+            {
+                Text = "Reset Current Player",
+                Size = new Size(120, 30),
+                Location = new Point(GRID_OFFSET + (GRID_SIZE * CELL_SIZE) + 50, GRID_OFFSET + 400)
+            };
+            resetButton.Click += (s, e) => ResetCurrentPlayer();
+            this.Controls.Add(resetButton);
 
             // Set up mouse and keyboard events
             this.Paint += GameSetupForm_Paint;
@@ -186,6 +194,26 @@ namespace BattleshipGame
             {
                 g.DrawRectangle(pen, rect);
             }
+
+            // If this is a placed ship, check if it's the first cell of the ship to draw the label
+            if (placedShips.TryGetValue(new Point(gridX, gridY), out Ship? ship))
+            {
+                var firstCoord = ship.Coordinates[0];
+                if (gridX == firstCoord.Row && gridY == firstCoord.Col)
+                {
+                    // Draw ship name
+                    using var font = new Font("Arial", 8, FontStyle.Bold);
+                    var shipName = ship.Name[..2]; // First two letters of ship name
+                    var textColor = Color.FromArgb(
+                        255 - color.R,
+                        255 - color.G,
+                        255 - color.B); // Contrasting color
+                    var size = g.MeasureString(shipName, font);
+                    g.DrawString(shipName, font, new SolidBrush(textColor),
+                        GRID_OFFSET + (gridX * CELL_SIZE) + (CELL_SIZE - size.Width) / 2,
+                        GRID_OFFSET + (gridY * CELL_SIZE) + (CELL_SIZE - size.Height) / 2);
+                }
+            }
         }
 
         private (int, int)[]? GetShipPreviewCells(int gridX, int gridY)
@@ -275,11 +303,18 @@ namespace BattleshipGame
                             MessageBox.Show("Player 1's ships have been placed. Player 2's turn to place ships.", "Next Player");
                         }
                         else
-                        {
-                            // Both players have placed their ships, start the game
+                        {                            // Both players have placed their ships, start the game
                             MessageBox.Show("All ships placed! Ready to start the game.", "Setup Complete");
-                            // TODO: Create and show the main game form
-                            this.DialogResult = DialogResult.OK;
+                            
+                            // Create and show the main game form
+                            var gameForm = new GameForm(
+                                ships.ToArray(), // Player 1's ships
+                                ships.ToArray(), // Player 2's ships (same ship configurations)
+                                player1Grid,
+                                player2Grid);
+                            
+                            this.Hide();
+                            gameForm.ShowDialog();
                             this.Close();
                         }
                     }
@@ -324,6 +359,41 @@ namespace BattleshipGame
             if (selectedShip != null && !selectedShip.IsPlaced)
             {
                 selectedShip.Rotate();
+                this.Invalidate();
+            }
+        }
+
+        private void ResetCurrentPlayer()
+        {
+            var result = MessageBox.Show(
+                $"Are you sure you want to reset Player {currentPlayer}'s ships?",
+                "Reset Confirmation",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question);
+
+            if (result == DialogResult.Yes)
+            {
+                var currentPlayerShips = placedShips.Values.Distinct().ToArray();
+                foreach (var ship in currentPlayerShips)
+                {
+                    ship.IsPlaced = false;
+                }
+                placedShips.Clear();
+                
+                // Reset grid
+                var grid = currentPlayer == 1 ? player1Grid : player2Grid;
+                Array.Clear(grid, 0, grid.Length);
+
+                // Re-enable buttons
+                foreach (Control control in this.Controls)
+                {
+                    if (control is Button button && button.Tag is Ship)
+                    {
+                        button.Enabled = true;
+                    }
+                }
+
+                selectedShip = null;
                 this.Invalidate();
             }
         }
