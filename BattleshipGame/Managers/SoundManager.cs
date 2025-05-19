@@ -7,7 +7,8 @@ namespace BattleshipGame
         private static readonly SoundPlayer? hitSound;
         private static readonly SoundPlayer? missSound;
         private static readonly SoundPlayer? sinkSound;
-        private static readonly SoundPlayer? victorySound;        static SoundManager()
+        private static readonly SoundPlayer? victorySound;
+        static SoundManager()
         {
             try
             {
@@ -30,7 +31,8 @@ namespace BattleshipGame
             {
                 // Fail silently if sounds can't be loaded
             }
-        }        public static void PlayHit()
+        }
+        public static void PlayHit()
         {
             try
             {
