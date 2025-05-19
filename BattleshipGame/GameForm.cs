@@ -30,6 +30,11 @@ namespace BattleshipGame
         public GameForm(Ship[] player1Ships, Ship[] player2Ships, bool[,] player1Grid, bool[,] player2Grid)
         {
             InitializeComponent();
+            this.DoubleBuffered = true;
+            this.SetStyle(ControlStyles.OptimizedDoubleBuffer | 
+                         ControlStyles.AllPaintingInWmPaint |
+                         ControlStyles.UserPaint, true);
+                         
             this.player1Ships = player1Ships;
             this.player2Ships = player2Ships;
             this.player1Grid = player1Grid;
@@ -40,7 +45,7 @@ namespace BattleshipGame
         private void InitializeGame()
         {
             this.Text = $"Battleship - Player {currentPlayer}'s Turn";
-            this.Size = new Size(1200, 600);
+            this.Size = new Size(1300, 550);
             this.StartPosition = FormStartPosition.CenterScreen;
 
             // Add player labels
@@ -261,17 +266,48 @@ namespace BattleshipGame
                 var shotsGrid = currentPlayer == 1 ? player1Shots : player2Shots;
                 if (!shotsGrid[gridX, gridY])
                 {
+                    var oldHoverCell = hoverCell;
                     hoverCell = new Point(gridX, gridY);
-                    this.Invalidate();
+
+                    // Only invalidate if the hover cell has changed
+                    if (oldHoverCell != hoverCell)
+                    {
+                        // Invalidate old hover cell
+                        if (oldHoverCell.HasValue)
+                        {
+                            InvalidateCell(oldHoverCell.Value.X, oldHoverCell.Value.Y, true);
+                        }
+                        // Invalidate new hover cell
+                        InvalidateCell(gridX, gridY, true);
+                    }
                     return;
                 }
             }
 
             if (hoverCell.HasValue)
             {
+                var oldHoverCell = hoverCell;
                 hoverCell = null;
-                this.Invalidate();
+                // Invalidate the previous hover cell
+                InvalidateCell(oldHoverCell.Value.X, oldHoverCell.Value.Y, true);
             }
+        }
+
+        private void InvalidateCell(int x, int y, bool isOpponentGrid)
+        {
+            // Add a small padding to ensure clean redraw
+            const int padding = 2;
+            int xOffset = isOpponentGrid ? 
+                GRID_OFFSET + GRID_SIZE * CELL_SIZE + GRID_SPACING : 
+                GRID_OFFSET;
+
+            Rectangle cellRect = new Rectangle(
+                xOffset + (x * CELL_SIZE) - padding,
+                GRID_OFFSET + (y * CELL_SIZE) - padding,
+                CELL_SIZE + (padding * 2),
+                CELL_SIZE + (padding * 2));
+            
+            this.Invalidate(cellRect);
         }
 
         private void GameForm_MouseClick(object? sender, MouseEventArgs e)
@@ -298,11 +334,10 @@ namespace BattleshipGame
                         {                            if (ship.IsSunk)
                             {
                                 SoundManager.PlaySink();
-                                MessageBox.Show($"You sunk the opponent's {ship.Name}!", "Ship Sunk!");
-                                
-                                // Check for game over
+                                MessageBox.Show($"You sunk the opponent's {ship.Name}!", "Ship Sunk!");                                // Check for game over by checking if all opponent's ships are sunk
                                 if (targetShips.All(s => s.IsSunk))
-                                {                                    gameOver = true;
+                                {
+                                    gameOver = true;
                                     SoundManager.PlayVictory();
                                     MessageBox.Show($"Player {currentPlayer} wins!", "Game Over");
                                     return;
@@ -386,9 +421,8 @@ namespace BattleshipGame
                 Location = new Point(10, 10),
                 Size = new Size(180, 30)
             };
-            statusPanel.Controls.Add(turnLabel);
-
-            // Add ship status for current player
+            statusPanel.Controls.Add(turnLabel);            // Add ship status for current player
+            // Get the current player's ships and the opponent's shots that hit them
             var ships = currentPlayer == 1 ? player1Ships : player2Ships;
             int yOffset = 50;
 

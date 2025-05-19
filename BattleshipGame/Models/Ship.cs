@@ -1,4 +1,5 @@
-namespace BattleshipGame.Models;    public class Ship
+namespace BattleshipGame.Models;    
+public class Ship
     {
         public string Name { get; }
         public int Length { get; }

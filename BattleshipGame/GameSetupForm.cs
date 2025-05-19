@@ -20,6 +20,11 @@ namespace BattleshipGame
         public GameSetupForm()
         {
             InitializeComponent();
+            this.DoubleBuffered = true;
+            this.SetStyle(ControlStyles.OptimizedDoubleBuffer | 
+                         ControlStyles.AllPaintingInWmPaint |
+                         ControlStyles.UserPaint, true);
+            
             ships = new Ship[]
             {
                 new Ship("Carrier", 5),
@@ -62,7 +67,7 @@ namespace BattleshipGame
             Button resetButton = new Button
             {
                 Text = "Reset Current Player",
-                Size = new Size(120, 30),
+                Size = new Size(120, 60),
                 Location = new Point(GRID_OFFSET + (GRID_SIZE * CELL_SIZE) + 50, GRID_OFFSET + 400)
             };
             resetButton.Click += (s, e) => ResetCurrentPlayer();
@@ -246,6 +251,7 @@ namespace BattleshipGame
                 int gridX = (e.X - GRID_OFFSET) / CELL_SIZE;
                 int gridY = (e.Y - GRID_OFFSET) / CELL_SIZE;
 
+                var oldHoverCell = hoverCell;
                 if (gridX >= 0 && gridX < GRID_SIZE && gridY >= 0 && gridY < GRID_SIZE)
                 {
                     hoverCell = new Point(gridX, gridY);
@@ -254,7 +260,43 @@ namespace BattleshipGame
                 {
                     hoverCell = null;
                 }
-                this.Invalidate();
+
+                // Only invalidate if the hover cell has changed
+                if (oldHoverCell != hoverCell)
+                {
+                    // Invalidate old preview area
+                    if (oldHoverCell.HasValue)
+                    {
+                        var cells = GetShipPreviewCells(oldHoverCell.Value.X, oldHoverCell.Value.Y);
+                        InvalidatePreviewRegion(cells);
+                    }
+                    // Invalidate new preview area
+                    if (hoverCell.HasValue)
+                    {
+                        var cells = GetShipPreviewCells(hoverCell.Value.X, hoverCell.Value.Y);
+                        InvalidatePreviewRegion(cells);
+                    }
+                }
+            }
+        }
+
+        private void InvalidatePreviewRegion((int, int)[]? cells)
+        {
+            if (cells == null) return;
+            
+            // Add a small padding to ensure clean redraw
+            const int padding = 2;
+            foreach (var (x, y) in cells)
+            {
+                if (x >= 0 && x < GRID_SIZE && y >= 0 && y < GRID_SIZE)
+                {
+                    Rectangle cellRect = new Rectangle(
+                        GRID_OFFSET + (x * CELL_SIZE) - padding,
+                        GRID_OFFSET + (y * CELL_SIZE) - padding,
+                        CELL_SIZE + (padding * 2),
+                        CELL_SIZE + (padding * 2));
+                    this.Invalidate(cellRect);
+                }
             }
         }
 
@@ -305,11 +347,26 @@ namespace BattleshipGame
                         else
                         {                            // Both players have placed their ships, start the game
                             MessageBox.Show("All ships placed! Ready to start the game.", "Setup Complete");
+                              // Create separate ship arrays for each player
+                            var player1Ships = ships.Select(s => new Ship(s.Name, s.Length) 
+                            { 
+                                IsPlaced = true,
+                                Coordinates = s.Coordinates.ToArray(),
+                                IsHorizontal = s.IsHorizontal 
+                            }).ToArray();
+
+                            // Reset ships array for player 2's ships
+                            var player2Ships = ships.Select(s => new Ship(s.Name, s.Length)
+                            {
+                                IsPlaced = true,
+                                Coordinates = s.Coordinates.ToArray(),
+                                IsHorizontal = s.IsHorizontal
+                            }).ToArray();
                             
                             // Create and show the main game form
                             var gameForm = new GameForm(
-                                ships.ToArray(), // Player 1's ships
-                                ships.ToArray(), // Player 2's ships (same ship configurations)
+                                player1Ships,
+                                player2Ships,
                                 player1Grid,
                                 player2Grid);
                             
